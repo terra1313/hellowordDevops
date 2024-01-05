@@ -3,7 +3,7 @@ name: C++ CI
 on:
   push:
     branches:
-      - main
+      - master
 
 jobs:
   build:
@@ -16,7 +16,7 @@ jobs:
         compiler: [gcc, clang, msvc]
 
     container:
-      image: ${{ matrix.os == 'ubuntu-latest' && matrix.compiler == 'gcc' ? 'ubuntu:latest' : 'mcr.microsoft.com/windows/servercore:ltsc2019' }}
+      image: ${{ if (matrix.os == 'ubuntu-latest' && matrix.compiler == 'gcc') }}ubuntu:latest{{ else }}mcr.microsoft.com/windows/servercore:ltsc2019{{ endif }}
 
     steps:
       - name: Checkout Repository
