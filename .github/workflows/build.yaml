@@ -2,7 +2,75 @@ name: C++ CI
 
 on: [push]
 
+jobs:name: C++ CI
+
+on:
+  push:
+    branches:
+      - master
+
 jobs:
+  build:
+    name: Build and Test
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        compiler: [gcc, clang, msvc]
+
+    container:
+      image: ${{ matrix.os == 'ubuntu-latest' ? 'ubuntu:latest' : 'mcr.microsoft.com/windows/servercore:ltsc2019' }}
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Set Up SSH Keys for Submodule Repositories
+        uses: webfactory/ssh-agent@v0.7.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_KEY_SUBMODULE_AI_OMNISCOPE_V2 }}
+
+      - name: Initialize Submodules
+        run: git submodule update --init --recursive
+
+      - name: Set Up C++ Environment
+        uses: aminya/setup-cpp@v1
+        with:
+          compiler: ${{ matrix.compiler }}
+          vcvarsall: ${{ matrix.os == 'windows-latest' }}
+          cmake: true
+
+      - name: Install Dependencies (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          apt-get update
+          apt-get install -y libxinerama-dev libxcursor-dev xorg-dev libglu1-mesa-dev pkg-config
+
+      - name: Set Up Prerequisites (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          apt-get update
+          apt-get install -y autoconf libudev-dev
+
+      - name: Set Up MSVC Dev Command Prompt (Windows)
+        if: matrix.os == 'windows-latest'
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: CMake Configure
+        run: cmake -S . -B ./build -DCMAKE_BUILD_TYPE="Release"
+
+      - name: Build
+        run: cmake --build ./build ${{ matrix.os == 'windows-latest' ? '--config Release' : '' }}
+
+      - name: Upload Executable
+        uses: actions/upload-artifact@v3
+        with:
+          name: executable-${{ matrix.os }}
+          path: |
+            ${{ matrix.os == 'windows-latest' }}: build/Release/OmniView.exe
+            ${{ matrix.os == 'ubuntu-latest' }}: build/OmniView
+
   build:
     name: ${{ matrix.os }}-${{ github.workflow }}
     runs-on: ${{ matrix.os }}
