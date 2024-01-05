@@ -16,7 +16,7 @@ jobs:
         compiler: [gcc, clang, msvc]
 
     container:
-      image: ${{ matrix.os == 'ubuntu-latest' ? 'ubuntu:latest' : 'mcr.microsoft.com/windows/servercore:ltsc2019' }}
+      image: ${{ matrix.os == 'ubuntu-latest' && matrix.compiler == 'gcc' ? 'ubuntu:latest' : 'mcr.microsoft.com/windows/servercore:ltsc2019' }}
 
     steps:
       - name: Checkout Repository
